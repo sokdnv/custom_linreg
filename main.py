@@ -7,6 +7,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import numpy as np
 
+
 class LinReg:
     def __init__(self, learning_rate=0.1):
         self.learning_rate = learning_rate
@@ -14,6 +15,8 @@ class LinReg:
         self.intercept_ = np.random.random()
 
     def predict(self, X):
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
         y_pred = X @ self.coef_[1:] + self.coef_[0]
         return y_pred
 
@@ -117,14 +120,15 @@ if button:
     test = pd.read_csv('data/test_flats.csv')
 
     ss = StandardScaler()
-    train_s = ss.fit_transform(train)
-    test_s = ss.transform(test)
+    X_train_s = ss.fit_transform(train.iloc[:, :-1])
+    X_test_s = ss.transform(test.iloc[:, :-1])
 
-    st.session_state.y_train = train_s[:, -1]
-    st.session_state.X_train = train_s[:, :-1]
+    st.session_state.ss = ss
+    st.session_state.y_train = train.iloc[:, -1].values
+    st.session_state.X_train = X_train_s
 
-    st.session_state.y_test = test_s[:, -1]
-    st.session_state.X_test = test_s[:, :-1]
+    st.session_state.y_test = test.iloc[:, -1].values
+    st.session_state.X_test = X_test_s
 
     st.session_state.flag = True
 
@@ -142,6 +146,7 @@ if st.session_state.flag:
 
 if st.session_state.submit and 'results' not in st.session_state:
     ln = LinReg(learning_rate=st.session_state.lr)
+    st.session_state.ln = ln
     ln.fit(st.session_state.X_train, st.session_state.y_train, epochs=st.session_state.epoch)
     st.session_state.results = {
         'coefficients': ln.coef_,
@@ -157,6 +162,19 @@ if 'results' in st.session_state:
                 f'W1: {st.session_state.results["coefficients"][1]:.4f}, '
                 f'W2: {st.session_state.results["coefficients"][2]:.4f}')
     st.markdown(f'**Score:** {st.session_state.results["score"]:.4f}')
+
+    st.subheader('Узнай стоимость своей квартиры!')
+    with st.form(key='reg_form'):
+        cols_1 = st.columns(3)
+        with cols_1[0]:
+            sq = st.number_input(label='Площадь', min_value=0, max_value=500)
+        with cols_1[1]:
+            dist = st.number_input(label='Расстояние до центра', min_value=0, max_value=100)
+        with cols_1[2]:
+            submit_1 = st.form_submit_button(label="Подсчитать")
+    if submit_1:
+        user_input = st.session_state.ss.transform(np.array([[sq, dist]]))
+        st.write(f'Оценочная стоимость {st.session_state.ln.predict(user_input)[0]:,.0f} ye.')
 
     with st.form(key='plot_form'):
         cols = st.columns(2)
