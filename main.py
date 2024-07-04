@@ -159,8 +159,11 @@ if 'results' in st.session_state:
     st.markdown(f'**Score:** {st.session_state.results["score"]:.4f}')
 
     with st.form(key='plot_form'):
-        plot_choice = st.toggle("Интерактивный")
-        plot = st.form_submit_button(label="Дай график")
+        cols = st.columns(2)
+        with cols[0]:
+            plot_choice = st.checkbox("Интерактивный")
+        with cols[1]:
+            plot = st.form_submit_button(label="Дай график")
 
     if plot:
         if plot_choice:
