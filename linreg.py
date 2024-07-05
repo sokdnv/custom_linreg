@@ -109,8 +109,8 @@ if 'flag' not in st.session_state:
 if 'submit' not in st.session_state:
     st.session_state.submit = False
 
-st.title('Корявая линейная регрессия')
-st.caption('но я старался')
+st.title('Линейная регрессия')
+st.caption('Серёжи')
 st.divider()
 
 button = st.sidebar.button('Погонять на подготовленных данных')
