@@ -143,7 +143,7 @@ if button:
 if st.session_state.flag:
     with st.sidebar.form(key='compression_form'):
         st.header('Настройки')
-        lr = st.radio('Скорость обучения', [0.1, 0.01, 0.001])
+        lr = st.slider('Скорость обучения', 0.001, 0.5, step=0.001, format="%.3f")
         epoch = st.slider('Количество эпох', 5, 4000)
         submit = st.form_submit_button(label="Обучаем")
 
