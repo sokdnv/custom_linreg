@@ -224,9 +224,9 @@ if 'results' in st.session_state:
     with st.form(key='plot_form'):
         cols = st.columns(2)
         with cols[0]:
-            plot_choice = st.checkbox("Интерактивный")
-        with cols[1]:
             plot = st.form_submit_button(label="Дай график")
+        with cols[1]:
+            plot_choice = st.checkbox("Интерактивный")
 
     if plot:
         if plot_choice:
