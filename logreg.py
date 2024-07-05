@@ -39,14 +39,15 @@ class LogReg:
         y_pred = self.predict_proba(X)
         return -np.mean(y * np.log(y_pred) + (1 - y) * np.log(1 - y_pred))
 
+    def accuracy(self, X, y):
+        y_pred = self.predict(X)
+        return np.mean(y_pred == y)
+
     def fit(self, X, y, epochs=500):
-        self.coef_ = np.random.uniform(low=-1, high=1, size=X.shape[1] + 1)
+        self.coef_ = np.random.uniform(low=-0.1, high=0.1, size=X.shape[1] + 1)
 
         for epoch in range(1, epochs + 1):
             self.coef_ -= self.learning_rate * self.grad(X, y)
-        formatted_weights = ' '.join([f'{coef:.4f}' for coef in self.coef_])
-
-        print(f'Веса модели {formatted_weights}. Потеря {self.score(X, y)}')
 
     def matplot(self, X_train, y_train, X_test, y_test):
         if X_train.shape[1] != 2:
@@ -137,16 +138,23 @@ if st.session_state.flag:
         epoch = st.slider('Количество эпох', 5, 4000)
         submit = st.form_submit_button(label="Обучаем")
 
+        if 'previous_results' not in st.session_state:
+            st.session_state.previous_results = None
+
         if submit:
             st.session_state.submit = True
             st.session_state.lr = lr
             st.session_state.epoch = epoch
+            if 'results' in st.session_state:
+                st.session_state.previous_results = st.session_state.results
+                del st.session_state.results
 
-if st.session_state.submit and 'results' not in st.session_state:
+if st.session_state.submit:
     lg = LogReg(learning_rate=st.session_state.lr)
     st.session_state.lg = lg
     lg.fit(st.session_state.X_train, st.session_state.y_train, epochs=st.session_state.epoch)
     st.session_state.results = {
+        'accuracy': lg.accuracy(st.session_state.X_test, st.session_state.y_test),
         'coefficients': lg.coef_,
         'score': lg.score(st.session_state.X_test, st.session_state.y_test),
         'plotly_fig': lg.plotly(st.session_state.X_train, st.session_state.y_train,
@@ -155,17 +163,41 @@ if st.session_state.submit and 'results' not in st.session_state:
                                   st.session_state.X_test, st.session_state.y_test)
     }
 
+
+def calculate_change(current, previous):
+    if previous is None:
+        return None
+    return ((current - previous) / abs(previous)) * 100
+
+
 if 'results' in st.session_state:
-    st.markdown(f'**Коэффициенты:** W0: {st.session_state.results["coefficients"][0]:.4f}, '
-                f'W1: {st.session_state.results["coefficients"][1]:.4f}, '
-                f'W2: {st.session_state.results["coefficients"][2]:.4f}')
-    st.markdown(f'**Score:** {st.session_state.results["score"]:.4f}')
+    st.subheader("Результаты обучения модели")
+
+    st.write("### Коэффициенты:")
+    st.write(f"**W0:** {st.session_state.results['coefficients'][0]:.4f}")
+    st.write(f"**W1:** {st.session_state.results['coefficients'][1]:.4f}")
+    st.write(f"**W2:** {st.session_state.results['coefficients'][2]:.4f}")
+
+    st.write("### Оценка модели:")
+    score_change = calculate_change(st.session_state.results['score'],
+                                    st.session_state.previous_results[
+                                        'score'] if st.session_state.previous_results else None)
+    accuracy_change = calculate_change(st.session_state.results['accuracy'],
+                                       st.session_state.previous_results[
+                                           'accuracy'] if st.session_state.previous_results else None)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(label="Score", value=f"{st.session_state.results['score']:.4f}",
+                  delta=f"{score_change:.2f}%" if score_change is not None else None)
+    with col2:
+        st.metric(label="Accuracy", value=f"{st.session_state.results['accuracy']:.4f}",
+                  delta=f"{accuracy_change:.2f}%" if accuracy_change is not None else None)
 
     st.subheader('Узнай свои шансы на кредит!')
     with st.form(key='reg_form'):
         cols_1 = st.columns(3)
         with cols_1[0]:
-            sq = st.slider(label='Кредитный рейтинг', min_value=0, max_value=10)
+            sq = st.slider(label='Кредитный рейтинг', min_value=0., max_value=10., step=0.01)
         with cols_1[1]:
             dist = st.number_input(label='Доход т.р.', min_value=10, max_value=200)
         with cols_1[2]:
@@ -178,8 +210,7 @@ if 'results' in st.session_state:
             else:
                 st.write(f'Никакого тебе кредита!')
         with cols_1[1]:
-            st.write(f'Вероятность одобрения {st.session_state.lg.predict_proba(user_input)[0]:.4f}')
-
+            st.write(f'Вероятность {st.session_state.lg.predict_proba(user_input)[0] * 100:.1f} %')
 
     with st.form(key='plot_form'):
         cols = st.columns(2)
