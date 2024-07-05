@@ -53,15 +53,17 @@ class LogReg:
         if X_train.shape[1] != 2:
             return 'Ошибка размерности данных!'
 
-        X = np.vstack((X_train, X_test))
-        y = np.concatenate((y_train, y_test))
-
         fig = plt.figure(figsize=(20, 12))
-        sns.scatterplot(x=X[:, 0], y=X[:, 1], hue=y, palette={0: 'blue', 1: 'red'}, legend='full')
 
-        x_values = [np.min(X[:, 0] - 1), np.max(X[:, 0] + 1)]
+        sns.scatterplot(x=X_train[:, 0], y=X_train[:, 1], hue=y_train, palette={0: 'blue', 1: 'red'},
+                        style=y_train, markers={0: 'X', 1: 'X'}, legend='full', s=100, label='Train')
+
+        sns.scatterplot(x=X_test[:, 0], y=X_test[:, 1], hue=y_test, palette={0: 'blue', 1: 'red'},
+                        style=y_test, markers={0: 'o', 1: 'o'}, legend='brief', s=100, label='Test')
+
+        x_values = [np.min(np.vstack((X_train, X_test))[:, 0] - 1), np.max(np.vstack((X_train, X_test))[:, 0] + 1)]
         y_values = -(self.coef_[1] * np.array(x_values) + self.coef_[0]) / self.coef_[2]
-        plt.plot(x_values, y_values, label='Прямая лог. регрессии')
+        plt.plot(x_values, y_values, label='Линия регрессии')
 
         plt.xlabel('Фича 1')
         plt.ylabel('Фича 2')
@@ -72,26 +74,33 @@ class LogReg:
         if X_train.shape[1] != 2:
             return 'Ошибка размерности данных!'
 
-        X = np.vstack((X_train, X_test))
-        y = np.concatenate((y_train, y_test))
-
         fig = make_subplots(rows=1, cols=1)
 
+        size = 7
+
         fig.add_trace(go.Scatter(
-            x=X[y == 0][:, 0], y=X[y == 0][:, 1],
-            mode='markers', marker=dict(color='blue'), name='Class 0'
+            x=X_train[y_train == 0][:, 0], y=X_train[y_train == 0][:, 1],
+            mode='markers', marker=dict(color='blue', symbol='x', size=size), name='Train Class 0'
+        ))
+        fig.add_trace(go.Scatter(
+            x=X_train[y_train == 1][:, 0], y=X_train[y_train == 1][:, 1],
+            mode='markers', marker=dict(color='red', symbol='x', size=size), name='Train Class 1'
         ))
 
         fig.add_trace(go.Scatter(
-            x=X[y == 1][:, 0], y=X[y == 1][:, 1],
-            mode='markers', marker=dict(color='red'), name='Class 1'
+            x=X_test[y_test == 0][:, 0], y=X_test[y_test == 0][:, 1],
+            mode='markers', marker=dict(color='blue', symbol='circle', size=size), name='Test Class 0'
+        ))
+        fig.add_trace(go.Scatter(
+            x=X_test[y_test == 1][:, 0], y=X_test[y_test == 1][:, 1],
+            mode='markers', marker=dict(color='red', symbol='circle', size=size), name='Test Class 1'
         ))
 
-        x_values = [np.min(X[:, 0] - 1), np.max(X[:, 0] + 1)]
+        x_values = [np.min(np.vstack((X_train, X_test))[:, 0] - 1), np.max(np.vstack((X_train, X_test))[:, 0] + 1)]
         y_values = -(self.coef_[1] * np.array(x_values) + self.coef_[0]) / self.coef_[2]
         fig.add_trace(go.Scatter(
             x=x_values, y=y_values,
-            mode='lines', name='Прямая лог. регрессии'
+            mode='lines', name='Линия регрессии'
         ))
 
         fig.update_layout(
